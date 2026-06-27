@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390px, initial-scale=1.0">
+<title>THE FEED — Social Media</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{
+  width:390px; max-width:100vw;
+  min-height:100vh;
+  background:#000;
+  font-family:"Courier New",monospace;
+  overflow:hidden;
+  position:relative;
+}
+
+/* PHONE CHROME */
+#phone-wrap{
+  width:390px; min-height:100vh;
+  background:#050505;
+  position:relative;
+  overflow:hidden;
+}
+
+/* STATUS BAR */
+#status-bar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0.4rem 1.25rem;
+  background:#000;
+  font-size:0.65rem;
+  color:#fff;
+  position:relative; z-index:50;
+}
+#status-time{font-weight:700;}
+#status-icons{display:flex;gap:0.4rem;align-items:center;}
+
+/* NOTIF EXPLOSION LAYER */
+#notif-layer{
+  position:fixed; inset:0;
+  z-index:200;
+  pointer-events:none;
+  overflow:hidden;
+}
+.notif-card{
+  position:absolute;
+  background:rgba(15,15,15,0.95);
+  border:1px solid #222;
+  border-radius:14px;
+  padding:0.7rem 0.9rem;
+  display:flex; gap:0.6rem; align-items:flex-start;
+  width:calc(100% - 32px);
+  left:16px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+  transform:translateY(-120px);
+  transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s;
+  opacity:0;
+}
+.notif-card.show{transform:translateY(0);opacity:1;}
+.notif-card.exit{transform:translateY(-120px);opacity:0;}
+.notif-icon{width:32px;height:32px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.notif-body{flex:1;min-width:0;}
+.notif-app{font-size:0.55rem;color:#666;letter-spacing:0.15em;margin-bottom:0.15rem;}
+.notif-text{font-size:0.7rem;color:#ddd;line-height:1.4;word-break:break-word;}
+.notif-time{font-size:0.5rem;color:#444;margin-top:0.2rem;}
+
+/* GLITCH OVERLAY */
+#glitch-overlay{
+  position:fixed;inset:0;z-index:500;
+  pointer-events:none;opacity:0;
+  background:transparent;
+  transition:opacity 0.1s;
+}
+
+/* CHAOS COUNTER */
+#chaos-counter{
+  position:fixed;top:3rem;left:50%;transform:translateX(-50%);
+  z-index:300;
+  font-size:clamp(2.5rem,10vw,4rem);
+  font-weight:700;
+  color:#f43f5e;
+  text-shadow:0 0 30px #f43f5e, 0 0 60px #f43f5e;
+  opacity:0;transition:opacity 0.5s;
+  text-align:center;
+  pointer-events:none;
+  line-height:1;
+}
+#chaos-counter.show{opacity:1;}
+#chaos-label{font-size:0.6rem;color:#f43f5e;letter-spacing:0.3em;display:block;margin-top:0.25rem;}
+
+/* THE FEED (phase 2) */
+#feed-layer{
+  position:fixed;inset:0;z-index:100;
+  background:#000;
+  overflow:hidden;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.8s;
+}
+#feed-layer.show{opacity:1;pointer-events:all;}
+
+#feed-scroll{
+  position:absolute;top:0;left:0;right:0;
+  animation:scroll-feed 12s linear infinite;
+}
+@keyframes scroll-feed{
+  from{transform:translateY(0);}
+  to{transform:translateY(-50%);}
+}
+
+.feed-post{
+  padding:1rem;
+  border-bottom:1px solid #111;
+  position:relative;
+}
+.fp-header{display:flex;gap:0.6rem;align-items:center;margin-bottom:0.5rem;}
+.fp-avatar{width:36px;height:36px;border-radius:50%;flex-shrink:0;}
+.fp-name{font-size:0.7rem;font-weight:700;color:#fff;}
+.fp-handle{font-size:0.58rem;color:#555;}
+.fp-content{font-size:0.75rem;color:#ccc;line-height:1.5;margin-bottom:0.5rem;}
+.fp-media{width:100%;height:120px;border-radius:8px;object-fit:cover;margin-bottom:0.5rem;}
+.fp-actions{display:flex;gap:1.2rem;}
+.fp-action{font-size:0.65rem;color:#555;}
+.fp-tag{
+  position:absolute;top:0.75rem;right:0.75rem;
+  font-size:0.5rem;letter-spacing:0.15em;
+  padding:0.2rem 0.5rem;border-radius:3px;
+}
+.fp-tag.toxic{background:rgba(244,63,94,0.15);color:#f43f5e;border:1px solid rgba(244,63,94,0.3);}
+.fp-tag.auth{background:rgba(6,182,212,0.1);color:#06b6d4;border:1px solid rgba(6,182,212,0.3);}
+
+/* FREEZE FRAME */
+#freeze-layer{
+  position:fixed;inset:0;z-index:600;
+  background:rgba(0,0,0,0);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity 0.8s;
+  padding:2rem;
+}
+#freeze-layer.show{opacity:1;}
+.freeze-msg{
+  font-size:clamp(1.3rem,5vw,2rem);font-weight:700;
+  color:#fff;text-align:center;line-height:1.3;
+  text-shadow:0 0 40px rgba(255,255,255,0.2);
+  margin-bottom:1.5rem;
+}
+.freeze-msg .r{color:#f43f5e;}
+.freeze-msg .p{color:#c084fc;}
+.freeze-stat{
+  font-size:0.6rem;color:#444;letter-spacing:0.2em;
+  text-align:center;line-height:2;
+  margin-bottom:2rem;
+}
+.freeze-vamshik{
+  display:flex;align-items:center;gap:1rem;
+  background:rgba(15,15,15,0.9);
+  border:1px solid #1a1a2e;
+  border-radius:12px;
+  padding:1rem 1.25rem;
+  margin-bottom:1.5rem;
+}
+.freeze-vamshik img{width:48px;height:64px;image-rendering:pixelated;}
+.freeze-vamshik-text{font-size:0.7rem;color:#999;line-height:1.6;font-style:italic;}
+.freeze-sub{font-size:0.58rem;color:#333;letter-spacing:0.2em;text-align:center;}
+
+/* DOPAMINE BAR */
+#dopa-bar-wrap{
+  position:fixed;bottom:2rem;left:1rem;right:1rem;z-index:400;
+  opacity:0;transition:opacity 0.5s;
+}
+#dopa-bar-wrap.show{opacity:1;}
+#dopa-label{color:#f43f5e;font-size:0.55rem;letter-spacing:0.2em;margin-bottom:0.3rem;display:flex;justify-content:space-between;}
+#dopa-track{height:6px;background:#111;border-radius:99px;overflow:hidden;border:1px solid #1a1a2e;}
+#dopa-fill{height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#f43f5e);border-radius:99px;transition:width 0.3s;box-shadow:0 0 8px #f43f5e;}
+
+/* SCANLINE */
+body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.06) 3px,rgba(0,0,0,0.06) 4px);pointer-events:none;z-index:9999;}
+
+/* INITIAL LOCK SCREEN */
+#lock-screen{
+  position:fixed;inset:0;z-index:900;
+  background:#000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0.75rem;transition:opacity 0.8s;
+}
+#lock-screen.hide{opacity:0;pointer-events:none;}
+.lock-time{color:#fff;font-size:3.5rem;font-weight:700;letter-spacing:-0.02em;}
+.lock-date{color:#888;font-size:0.75rem;letter-spacing:0.2em;}
+.lock-hint{color:#444;font-size:0.6rem;letter-spacing:0.25em;margin-top:2rem;animation:blink2 2s infinite;}
+@keyframes blink2{0%,100%{opacity:0.4}50%{opacity:1}}
+</style>
+</head>
+<body>
+<div id="phone-wrap">
+
+  <!-- LOCK SCREEN -->
+  <div id="lock-screen">
+    <div class="lock-time" id="lock-time">10:47</div>
+    <div class="lock-date">SATURDAY · VAMSHIK'S PHONE</div>
+    <div class="lock-hint">tap to unlock</div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div id="status-bar">
+    <span id="status-time">10:47</span>
+    <div id="status-icons">
+      <span>●●●</span>
+      <span>WiFi</span>
+      <span>87%</span>
+    </div>
+  </div>
+
+  <!-- NOTIF EXPLOSION -->
+  <div id="notif-layer"></div>
+
+  <!-- CHAOS COUNTER -->
+  <div id="chaos-counter">
+    <span id="chaos-num">0</span>
+    <span id="chaos-label">NOTIFICATIONS</span>
+  </div>
+
+  <!-- GLITCH -->
+  <div id="glitch-overlay"></div>
+
+  <!-- DOPAMINE BAR -->
+  <div id="dopa-bar-wrap">
+    <div id="dopa-label"><span>DOPAMINE LOOP</span><span id="dopa-pct">0%</span></div>
+    <div id="dopa-track"><div id="dopa-fill"></div></div>
+  </div>
+
+  <!-- THE FEED -->
+  <div id="feed-layer">
+    <div id="feed-scroll" id="feed-scroll"></div>
+  </div>
+
+  <!-- FREEZE -->
+  <div id="freeze-layer">
+    <div class="freeze-msg">
+      This is what <span class="r">social media</span><br>does to your <span class="p">mind.</span>
+    </div>
+    <div class="freeze-stat">
+      avg person checks phone <strong style="color:#f43f5e">96×</strong> a day<br>
+      2.5 hrs lost to mindless scrolling<br>
+      dopamine spike lasts <strong style="color:#f43f5e">4 seconds</strong><br>
+      then you need another hit
+    </div>
+    <div class="freeze-vamshik">
+      <img src="data:image/png;base64,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" alt="vamshik">
+      <div class="freeze-vamshik-text">
+        "I used to post without thinking. After studying social media communication, I realized every caption is a message, every scroll is a choice — and silence is a choice too."
+      </div>
+    </div>
+    <div class="freeze-sub">MGNT102 · VAMSHIK · SOCIAL MEDIA COMMUNICATION</div>
+  </div>
+
+</div>
+
+<script>
+// ── NOTIFICATIONS DATA ──
+const notifData = [
+  { icon:"📱", color:"#f43f5e", app:"INSTAGRAM", text:"ahmed_k liked your photo", time:"now" },
+  { icon:"🐦", color:"#1d9bf0", app:"TWITTER/X", text:"6 people retweeted your thread", time:"now" },
+  { icon:"💬", color:"#25d366", app:"WHATSAPP", text:"Group: Guys did you see this?? 😭😭", time:"now" },
+  { icon:"📺", color:"#ff0000", app:"YOUTUBE", text:"New video: You won\'t believe what happened...", time:"1m" },
+  { icon:"🎵", color:"#1db954", app:"SPOTIFY", text:"Someone added to your playlist", time:"2m" },
+  { icon:"📸", color:"#e1306c", app:"INSTAGRAM", text:"priya_creates started a live!", time:"now" },
+  { icon:"⚡", color:"#f59e0b", app:"SNAPCHAT", text:"🔥 Your streak is about to expire!", time:"now" },
+  { icon:"🔔", color:"#c084fc", app:"TIKTOK", text:"nour.official posted a new video", time:"now" },
+  { icon:"💌", color:"#06b6d4", app:"TWITTER/X", text:"You have 3 new DMs", time:"3m" },
+  { icon:"⚠️", color:"#f43f5e", app:"INSTAGRAM", text:"DIYA commented on your post 👀", time:"now" },
+  { icon:"🎮", color:"#7c3aed", app:"DISCORD", text:"#general: bro wake up we\'re gaming", time:"now" },
+  { icon:"📧", color:"#999", app:"EMAIL", text:"47 unread emails", time:"just now" },
+  { icon:"🛒", color:"#f59e0b", app:"AMAZON", text:"Your order is 3 stops away!", time:"5m" },
+  { icon:"❤️", color:"#f43f5e", app:"INSTAGRAM", text:"132 people liked your story", time:"now" },
+  { icon:"🔁", color:"#06b6d4", app:"TWITTER/X", text:"Trending: #communication #mgnt102", time:"now" },
+  { icon:"😂", color:"#1db954", app:"WHATSAPP", text:"Mum sent a voice note (4:23)", time:"now" },
+  { icon:"🔥", color:"#f59e0b", app:"SNAPCHAT", text:"You have 5 unopened snaps!", time:"now" },
+  { icon:"📊", color:"#c084fc", app:"LINKEDIN", text:"Your post got 500 impressions", time:"now" },
+];
+
+const feedPosts = [
+  { avatar:"#f43f5e", name:"Ahmed K.", handle:"@ahmedliving", content:"Rise and grind 💪 Slept 4hrs. Built an empire. #NeverStop #Blessed", likes:"2.4K", comments:"87", type:"toxic", tag:"PERFORMATIVE" },
+  { avatar:"#06b6d4", name:"Priya M.", handle:"@priyacreates", content:"I almost quit today. But I didn\'t. That\'s enough. 🌫️", likes:"18.7K", comments:"943", type:"auth", tag:"AUTHENTIC" },
+  { avatar:"#f59e0b", name:"Hustle Boy", handle:"@grindset.bro", content:"POV: you\'re reading this instead of working on your assignment 😈 LIKE IF YOU\'RE GUILTY", likes:"44K", comments:"1.2K", type:"toxic", tag:"MANIPULATION" },
+  { avatar:"#c084fc", name:"Nour Writes", handle:"@nour.official", content:"Hot take: it\'s okay to not post for a week. Your worth isn\'t your engagement rate.", likes:"9.1K", comments:"312", type:"auth", tag:"AUTHENTIC" },
+  { avatar:"#e1306c", name:"Influencer X", handle:"@glamlife", content:"Just woke up like this 😇✨ no filter no edit just me being naturally perfect", likes:"31K", comments:"2.1K", type:"toxic", tag:"DECEPTIVE" },
+  { avatar:"#7c3aed", name:"Aarav Builds", handle:"@aarav.dev", content:"3 months of learning. First real project live. Code is messy. So am I. Still shipping 🚀", likes:"5.6K", comments:"201", type:"auth", tag:"AUTHENTIC" },
+  { avatar:"#f43f5e", name:"Drama Daily", handle:"@drama.acc", content:"OMG YOU WON\'T BELIEVE WHAT JUST HAPPENED 😱😱😱 [thread]", likes:"89K", comments:"4.3K", type:"toxic", tag:"CLICKBAIT" },
+  { avatar:"#06b6d4", name:"Kai Creates", handle:"@kai.creates", content:"Finished my first client project. Not perfect. But real, and mine 🎨", likes:"7.2K", comments:"445", type:"auth", tag:"AUTHENTIC" },
+  { avatar:"#f43f5e", name:"Ahmed K.", handle:"@ahmedliving", content:"Another day, another W. Follow for more motivation ✨ (link in bio)", likes:"1.9K", comments:"54", type:"toxic", tag:"PERFORMATIVE" },
+  { avatar:"#c084fc", name:"Maya Thinks", handle:"@maya.writes", content:"the way we communicate online is the way we communicate offline. both matter. both are you.", likes:"22K", comments:"830", type:"auth", tag:"AUTHENTIC" },
+];
+
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  const t = now.getHours().toString().padStart(2,"0") + ":" + now.getMinutes().toString().padStart(2,"0");
+  document.getElementById("lock-time").textContent = t;
+  document.getElementById("status-time").textContent = t;
+}
+updateClock();
+setInterval(updateClock, 10000);
+
+// ── LOCK SCREEN ──
+let unlocked = false;
+function unlockPhone() {
+  if(unlocked) return;
+  unlocked = true;
+  document.getElementById("lock-screen").classList.add("hide");
+  setTimeout(() => {
+    document.getElementById("lock-screen").style.display = "none";
+    startChaos();
+  }, 900);
+}
+const lockEl = document.getElementById("lock-screen");
+lockEl.addEventListener("click", unlockPhone);
+lockEl.addEventListener("touchend", e => { e.preventDefault(); unlockPhone(); });
+
+// ── CHAOS PHASE ──
+let notifCount = 0;
+let dopaLevel = 0;
+let chaosInterval;
+
+function startChaos() {
+  document.getElementById("chaos-counter").classList.add("show");
+  document.getElementById("dopa-bar-wrap").classList.add("show");
+
+  // Fire notifications in waves
+  let wave = 0;
+  const waves = [1, 2, 3, 3, 4, 5, 5, 6, 7, 8]; // notifs per wave
+  let waveIdx = 0;
+
+  function fireWave() {
+    if(waveIdx >= waves.length) {
+      // Transition to feed
+      setTimeout(startFeedPhase, 1200);
+      return;
+    }
+    const count = waves[waveIdx];
+    for(let i=0;i<count;i++) {
+      setTimeout(() => spawnNotif(), i * 120);
+    }
+    waveIdx++;
+    const delay = waveIdx < 5 ? 900 : 500;
+    setTimeout(fireWave, delay + count * 120);
+  }
+  fireWave();
+}
+
+function spawnNotif() {
+  notifCount++;
+  dopaLevel = Math.min(100, dopaLevel + 2.2);
+  document.getElementById("chaos-num").textContent = notifCount.toLocaleString();
+  document.getElementById("dopa-fill").style.width = dopaLevel + "%";
+  document.getElementById("dopa-pct").textContent = Math.round(dopaLevel) + "%";
+
+  const data = notifData[Math.floor(Math.random() * notifData.length)];
+  const layer = document.getElementById("notif-layer");
+
+  // Shift existing notifs down
+  layer.querySelectorAll(".notif-card.show").forEach(el => {
+    const top = parseInt(el.style.top || "60") + 78;
+    el.style.top = top + "px";
+    if(top > window.innerHeight) {
+      el.classList.remove("show");
+      setTimeout(() => el.remove(), 350);
+    }
+  });
+
+  const card = document.createElement("div");
+  card.className = "notif-card";
+  card.style.top = "60px";
+  card.innerHTML = `
+    <div class="notif-icon" style="background:${data.color}22;">${data.icon}</div>
+    <div class="notif-body">
+      <div class="notif-app">${data.app}</div>
+      <div class="notif-text">${data.text}</div>
+      <div class="notif-time">${data.time}</div>
+    </div>
+  `;
+  layer.appendChild(card);
+  requestAnimationFrame(() => card.classList.add("show"));
+
+  // Glitch at high dopamine
+  if(dopaLevel > 70 && Math.random() > 0.6) triggerGlitch();
+
+  // Auto remove after delay
+  setTimeout(() => {
+    card.classList.remove("show");
+    setTimeout(() => card.remove(), 400);
+  }, 3500 - waveSpeed());
+}
+
+function waveSpeed() {
+  return Math.min(notifCount * 8, 2000);
+}
+
+function triggerGlitch() {
+  const g = document.getElementById("glitch-overlay");
+  const colors = ["rgba(244,63,94,0.08)","rgba(124,58,237,0.08)","rgba(6,182,212,0.06)"];
+  g.style.background = colors[Math.floor(Math.random()*colors.length)];
+  g.style.opacity = "1";
+  // Shift
+  document.getElementById("phone-wrap").style.transform = `translateX(${(Math.random()-0.5)*6}px)`;
+  setTimeout(() => {
+    g.style.opacity = "0";
+    document.getElementById("phone-wrap").style.transform = "";
+  }, 80);
+}
+
+// ── FEED PHASE ──
+function startFeedPhase() {
+  // Clear notifs
+  document.getElementById("notif-layer").innerHTML = "";
+  document.getElementById("chaos-counter").classList.remove("show");
+
+  // Build feed
+  const feedEl = document.getElementById("feed-scroll");
+  const doubled = [...feedPosts, ...feedPosts]; // loop seamlessly
+  doubled.forEach(p => {
+    const div = document.createElement("div");
+    div.className = "feed-post";
+    div.innerHTML = `
+      <div class="fp-tag ${p.type}">${p.tag}</div>
+      <div class="fp-header">
+        <div class="fp-avatar" style="background:${p.avatar};width:36px;height:36px;border-radius:50%;"></div>
+        <div>
+          <div class="fp-name">${p.name}</div>
+          <div class="fp-handle">${p.handle}</div>
+        </div>
+      </div>
+      <div class="fp-content">${p.content}</div>
+      <div class="fp-actions">
+        <span class="fp-action">♥ ${p.likes}</span>
+        <span class="fp-action">💬 ${p.comments}</span>
+        <span class="fp-action">↗ Share</span>
+      </div>
+    `;
+    feedEl.appendChild(div);
+  });
+
+  document.getElementById("feed-layer").classList.add("show");
+
+  // Dopamine keeps ticking during feed
+  let feedTick = setInterval(() => {
+    dopaLevel = Math.min(100, dopaLevel + 0.8);
+    document.getElementById("dopa-fill").style.width = dopaLevel + "%";
+    document.getElementById("dopa-pct").textContent = Math.round(dopaLevel) + "%";
+    if(dopaLevel >= 100) clearInterval(feedTick);
+  }, 150);
+
+  // After 8 seconds — FREEZE
+  setTimeout(freezePhase, 8000);
+}
+
+// ── FREEZE PHASE ──
+function freezePhase() {
+  // Stop feed scroll
+  document.getElementById("feed-scroll").style.animationPlayState = "paused";
+  // Multiple glitches
+  let g = 0;
+  const glitchInterval = setInterval(() => {
+    triggerGlitch();
+    g++;
+    if(g > 8) {
+      clearInterval(glitchInterval);
+      // White flash
+      const overlay = document.getElementById("glitch-overlay");
+      overlay.style.background = "rgba(255,255,255,0.9)";
+      overlay.style.opacity = "1";
+      setTimeout(() => {
+        overlay.style.background = "rgba(0,0,0,0.85)";
+        document.getElementById("freeze-layer").classList.add("show");
+        document.getElementById("dopa-bar-wrap").classList.remove("show");
+      }, 150);
+    }
+  }, 100);
+}
+</script>
+</body>
+</html>
